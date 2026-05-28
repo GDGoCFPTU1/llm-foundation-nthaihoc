@@ -20,7 +20,6 @@ import anthropic
 
 # ---------------------------------------------------------------------------
 # Estimated costs per 1M INPUT & OUTPUT tokens (USD) as of March 2026
-# Vietnamese text generally consumes ~1.5x - 2.0x more tokens than English due to Unicode/diacritics.
 # ---------------------------------------------------------------------------
 PRICING_1M_TOKENS = {
     "gpt-4o": {"input": 5.00, "output": 20.00},
@@ -31,12 +30,10 @@ PRICING_1M_TOKENS = {
     "claude-3-5-haiku": {"input": 0.80, "output": 4.00},
 }
 
-# Standard Model Identifiers
 OPENAI_MODEL = "gpt-4o"
 OPENAI_MINI_MODEL = "gpt-4o-mini"
 GEMINI_MODEL = "gemini-2.5-flash"
 ANTHROPIC_MODEL = "claude-3-5-haiku"
-
 
 # ---------------------------------------------------------------------------
 # Task 1 — Call OpenAI (GPT-4o)
@@ -48,7 +45,8 @@ def call_openai(
     top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    # Sử dụng "mock-key" để tránh crash trên GitHub Actions nếu test suite dùng Mock
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", "mock-key-openai"))
     
     start_time = time.time()
     response = client.chat.completions.create(
@@ -68,7 +66,6 @@ def call_openai(
     
     return response_text, latency_seconds, usage
 
-
 # ---------------------------------------------------------------------------
 # Task 2 — Call Google Gemini 2.5 (Standard Practical Model)
 # ---------------------------------------------------------------------------
@@ -79,7 +76,7 @@ def call_gemini(
     top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY", "mock-key-gemini"))
     model_inst = genai.GenerativeModel(model)
     
     config = genai.types.GenerationConfig(
@@ -100,7 +97,6 @@ def call_gemini(
     
     return response_text, latency_seconds, usage
 
-
 # ---------------------------------------------------------------------------
 # Task 3 — Call Anthropic Claude (Exploratory track)
 # ---------------------------------------------------------------------------
@@ -111,7 +107,7 @@ def call_anthropic(
     top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "mock-key-anthropic"))
     
     start_time = time.time()
     response = client.messages.create(
@@ -131,9 +127,8 @@ def call_anthropic(
     
     return response_text, latency_seconds, usage
 
-
 # ---------------------------------------------------------------------------
-# Task 4 — Compare Models (OpenAI GPT-4o vs OpenAI Mini vs Gemini 2.5 Flash)
+# Task 4 — Compare Models 
 # ---------------------------------------------------------------------------
 def compare_models(prompt: str) -> dict:
     def calculate_cost(model_name: str, input_tokens: int, output_tokens: int) -> float:
@@ -142,7 +137,6 @@ def compare_models(prompt: str) -> dict:
 
     results = {}
 
-    # GPT-4o
     resp_4o, lat_4o, usage_4o = call_openai(prompt, model=OPENAI_MODEL)
     results["gpt4o"] = {
         "response": resp_4o,
@@ -152,7 +146,6 @@ def compare_models(prompt: str) -> dict:
         "output_tokens": usage_4o["output_tokens"]
     }
 
-    # GPT-4o-mini
     resp_mini, lat_mini, usage_mini = call_openai(prompt, model=OPENAI_MINI_MODEL)
     results["gpt4o_mini"] = {
         "response": resp_mini,
@@ -162,7 +155,6 @@ def compare_models(prompt: str) -> dict:
         "output_tokens": usage_mini["output_tokens"]
     }
 
-    # Gemini 2.5 Flash
     resp_gemini, lat_gemini, usage_gemini = call_gemini(prompt, model=GEMINI_MODEL)
     results["gemini_flash"] = {
         "response": resp_gemini,
@@ -174,12 +166,11 @@ def compare_models(prompt: str) -> dict:
 
     return results
 
-
 # ---------------------------------------------------------------------------
-# Task 5 — Streaming chatbot with Gemini 2.5 (Focus Model)
+# Task 5 — Streaming chatbot with Gemini 2.5
 # ---------------------------------------------------------------------------
 def streaming_chatbot() -> None:
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY", "mock-key-gemini"))
     model = genai.GenerativeModel(GEMINI_MODEL)
     chat = model.start_chat(history=[])
     
@@ -198,7 +189,6 @@ def streaming_chatbot() -> None:
                 print(chunk.text, end="", flush=True)
             print()
             
-            # Maintain only the last 3 turns (6 messages: 3 user, 3 model)
             if len(chat.history) > 6:
                 chat.history = chat.history[-6:]
                 
@@ -207,7 +197,6 @@ def streaming_chatbot() -> None:
             break
         except Exception as e:
             print(f"\nError: {e}")
-
 
 # ---------------------------------------------------------------------------
 # Bonus Task A — Retry with exponential backoff
@@ -231,7 +220,6 @@ def retry_with_backoff(
                 
     raise last_exception
 
-
 # ---------------------------------------------------------------------------
 # Bonus Task B — Batch compare
 # ---------------------------------------------------------------------------
@@ -242,7 +230,6 @@ def batch_compare(prompts: list[str]) -> list[dict]:
         comparison_result["prompt"] = prompt
         results.append(comparison_result)
     return results
-
 
 # ---------------------------------------------------------------------------
 # Bonus Task C — Format comparison table
@@ -259,8 +246,6 @@ def format_comparison_table(results: list[dict]) -> str:
         
         for model_key in ["gpt4o", "gpt4o_mini", "gemini_flash"]:
             data = res[model_key]
-            
-            # Truncate and clean response for table
             clean_resp = data["response"].replace("\n", " ").strip()
             resp_trunc = clean_resp[:50] + "..." if len(clean_resp) > 50 else clean_resp
             
@@ -271,27 +256,5 @@ def format_comparison_table(results: list[dict]) -> str:
             
     return "\n".join(lines)
 
-
-# ---------------------------------------------------------------------------
-# Entry point for manual testing
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    print("=== Model Comparison Test ===")
-    test_prompt = "Hãy giải thích sự khác biệt giữa temperature và top_p bằng tiếng Việt ngắn gọn trong 2 câu."
-    try:
-        # Note: Requires valid API keys set in environment variables
-        result = compare_models(test_prompt)
-        for model_name, stats in result.items():
-            print(f"\n[{model_name.upper()}]")
-            print(f"Latency: {stats['latency']:.2f}s | Cost: ${stats['cost']:.6f}")
-            print(f"Tokens: {stats['input_tokens']} in / {stats['output_tokens']} out")
-            print(f"Response: {stats['response']}")
-    except Exception as e:
-        print(f"Skipping live API comparison test: {e}")
-        print("Set your API keys to run manual tests.")
-
-    print("\n=== Starting Gemini 2.5 Chatbot (type 'quit' to exit) ===")
-    try:
-        streaming_chatbot()
-    except Exception as e:
-        print(f"Chatbot failed to start: {e}")
+    pass
