@@ -175,10 +175,12 @@ def compare_models(prompt: str) -> dict:
 # ---------------------------------------------------------------------------
 # Task 5 — Streaming chatbot with Gemini 2.5
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Task 5 — Streaming chatbot with Gemini 2.5
+# ---------------------------------------------------------------------------
 def streaming_chatbot() -> None:
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY", "mock-key-gemini"))
-    model = genai.GenerativeModel(GEMINI_MODEL)
-    chat = model.start_chat(history=[])
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "mock-key-gemini"))
+    chat = client.chats.create(model=GEMINI_MODEL)
     
     print("Welcome to Gemini Chatbot! (type 'quit' or 'exit' to end)")
     while True:
@@ -189,14 +191,20 @@ def streaming_chatbot() -> None:
                 break
             
             print("Bot: ", end="", flush=True)
-            response = chat.send_message(user_input, stream=True)
+            response_stream = chat.send_message_stream(user_input)
             
-            for chunk in response:
-                print(chunk.text, end="", flush=True)
+            for chunk in response_stream:
+                if chunk.text:
+                    print(chunk.text, end="", flush=True)
             print()
             
-            if len(chat.history) > 6:
-                chat.history = chat.history[-6:]
+            # Quản lý giới hạn lịch sử (chỉ giữ 3 lượt ~ 6 tin nhắn cuối)
+            history = chat.get_history()
+            if len(history) > 6:
+                chat = client.chats.create(
+                    model=GEMINI_MODEL, 
+                    history=history[-6:]
+                )
                 
         except (KeyboardInterrupt, EOFError):
             print("\nBot: Exiting chatbot...")
