@@ -69,6 +69,9 @@ def call_openai(
 # ---------------------------------------------------------------------------
 # Task 2 — Call Google Gemini 2.5 (Standard Practical Model)
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Task 2 — Call Google Gemini 2.5 (Standard Practical Model)
+# ---------------------------------------------------------------------------
 def call_gemini(
     prompt: str,
     model: str = GEMINI_MODEL,
@@ -76,17 +79,20 @@ def call_gemini(
     top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY", "mock-key-gemini"))
-    model_inst = genai.GenerativeModel(model)
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", "mock-key-gemini"))
     
-    config = genai.types.GenerationConfig(
+    config = types.GenerateContentConfig(
         temperature=temperature,
         top_p=top_p,
         max_output_tokens=max_tokens
     )
     
     start_time = time.time()
-    response = model_inst.generate_content(prompt, generation_config=config)
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=config
+    )
     latency_seconds = time.time() - start_time
     
     response_text = response.text

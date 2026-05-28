@@ -15,9 +15,9 @@ from typing import Any, Callable
 
 # SDK Imports
 from openai import OpenAI
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import anthropic
-
 # ---------------------------------------------------------------------------
 # Estimated costs per 1M INPUT & OUTPUT tokens (USD) as of March 2026
 # ---------------------------------------------------------------------------
