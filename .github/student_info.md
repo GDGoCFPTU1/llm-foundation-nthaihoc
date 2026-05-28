@@ -1,0 +1,4 @@
+- Ho va Ten: Nguyen Thai Hoc
+- Email: thaihocit02@gmail.com
+- github username: nthaihoc
+- discord username: 2A202600909
