@@ -14,8 +14,9 @@ import time
 from typing import Any, Callable
 
 # SDK Imports
-from openai import OpenAI
-import google.generativeai as genai
+import openai  # ĐỔI THÀNH DÒNG NÀY
+from google import genai
+from google.genai import types
 import anthropic
 
 # ---------------------------------------------------------------------------
@@ -38,6 +39,9 @@ ANTHROPIC_MODEL = "claude-3-5-haiku"
 # ---------------------------------------------------------------------------
 # Task 1 — Call OpenAI (GPT-4o)
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Task 1 — Call OpenAI (GPT-4o)
+# ---------------------------------------------------------------------------
 def call_openai(
     prompt: str,
     model: str = OPENAI_MODEL,
@@ -45,8 +49,9 @@ def call_openai(
     top_p: float = 0.9,
     max_tokens: int = 256,
 ) -> tuple[str, float, dict]:
-    # Sử dụng "mock-key" để tránh crash trên GitHub Actions nếu test suite dùng Mock
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", "mock-key-openai"))
+    
+    # SỬA DÒNG DƯỚI ĐÂY: Dùng openai.OpenAI thay vì OpenAI
+    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY", "mock-key-openai"))
     
     start_time = time.time()
     response = client.chat.completions.create(
